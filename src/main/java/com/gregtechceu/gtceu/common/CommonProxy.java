@@ -115,7 +115,6 @@ import com.tterrag.registrate.providers.RegistrateLangProvider;
 import com.tterrag.registrate.providers.RegistrateProvider;
 import com.tterrag.registrate.util.nullness.NonNullConsumer;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Arrays;
 import java.util.List;
@@ -126,10 +125,7 @@ import static com.gregtechceu.gtceu.common.registry.GTRegistration.REGISTRATE;
 
 public class CommonProxy {
 
-    private static IEventBus modBus;
-
     public static void init(final IEventBus modBus) {
-        CommonProxy.modBus = modBus;
         if (GTCEu.Mods.isKubeJSLoaded()) {
             // initialize this before the class's static listeners
             // so KubeJS materials are registered before the material registry is closed.
@@ -151,27 +147,11 @@ public class CommonProxy {
         GTCreativeModeTabs.init();
         GTAttachmentTypes.ATTACHMENT_TYPES.register(modBus);
 
-        FusionReactorMachine.registerFusionTier(GTValues.LuV, "MKI");
-        FusionReactorMachine.registerFusionTier(GTValues.ZPM, "MKII");
-        FusionReactorMachine.registerFusionTier(GTValues.UV, "MKIII");
-
-        AddonFinder.getAddonList().forEach(IGTAddon::gtInitComplete);
-    }
-
-    // Only register everything once.
-    private static boolean didRunRegistration = false;
-
-    @SubscribeEvent
-    public static void onRegister(RegisterEvent event) {
-        if (didRunRegistration) {
-            return;
-        }
-        didRunRegistration = true;
-
         GTElements.init();
         MaterialIconSet.init();
         MaterialIconType.init();
-        initMaterials();
+        GTCEu.LOGGER.info("Registering GTCEu Materials");
+        GTMaterials.init();
         GTMedicalConditions.init();
         TagPrefix.init();
 
@@ -229,12 +209,12 @@ public class CommonProxy {
         SyncedKeyMappings.init();
         MachineOwner.init();
         ChestGenHooks.init();
-    }
 
-    @ApiStatus.Internal
-    public static void initMaterials() {
-        GTCEu.LOGGER.info("Registering GTCEu Materials");
-        GTMaterials.init();
+        FusionReactorMachine.registerFusionTier(GTValues.LuV, "MKI");
+        FusionReactorMachine.registerFusionTier(GTValues.ZPM, "MKII");
+        FusionReactorMachine.registerFusionTier(GTValues.UV, "MKIII");
+
+        AddonFinder.getAddonList().forEach(IGTAddon::gtInitComplete);
     }
 
     // Fire post material events after all other material registry events.

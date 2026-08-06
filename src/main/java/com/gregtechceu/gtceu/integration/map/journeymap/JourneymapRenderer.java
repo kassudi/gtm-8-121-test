@@ -180,7 +180,7 @@ public class JourneymapRenderer extends GenericMapRenderer {
             return MATERIAL_ICONS.get(material);
         }
 
-        int materialRGBA = GradientUtil.argbToRgba(material.getMaterialARGB());
+        int materialAbgr = GradientUtil.argbToAbgr(material.getMaterialARGB());
 
         ResourceLocation layer1 = MaterialIconType.rawOre.getItemTexturePath(material.getMaterialIconSet(), true);
         TextureAtlasSprite baseTexture = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
@@ -198,11 +198,11 @@ public class JourneymapRenderer extends GenericMapRenderer {
             for (int y = 0; y < result.getHeight(); ++y) {
                 int color = baseTexture.getPixelRGBA(0, x, y);
                 result.setPixelRGBA(x, y, GradientUtil
-                        .multiplyBlendRGBA(color, materialRGBA));
+                        .multiplyBlendAbgr(color, materialAbgr));
             }
         }
         if (material.getMaterialSecondaryARGB() != -1) {
-            int materialSecondaryRGBA = GradientUtil.argbToRgba(material.getMaterialSecondaryARGB());
+            int materialSecondaryAbgr = GradientUtil.argbToAbgr(material.getMaterialSecondaryARGB());
             ResourceLocation layer2 = MaterialIconType.rawOre
                     .getItemTexturePath(material.getMaterialIconSet(), "secondary", true);
             if (layer2 == null) {
@@ -215,7 +215,7 @@ public class JourneymapRenderer extends GenericMapRenderer {
                 for (int y = 0; y < result.getHeight(); ++y) {
                     int color = image2.getPixelRGBA(0, x, y);
                     result.blendPixel(x, y, GradientUtil
-                            .multiplyBlendRGBA(color, materialSecondaryRGBA));
+                            .multiplyBlendAbgr(color, materialSecondaryAbgr));
                 }
             }
         }

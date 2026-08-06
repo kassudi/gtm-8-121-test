@@ -126,6 +126,7 @@ public class IntegrationLang {
 
     private static void initMinimapLang(RegistrateLangProvider provider) {
         provider.add("gtceu.minimap.ore_vein.depleted", "Depleted Vein");
+        provider.add("gtceu.minimap.ore_vein.more", "...and %s more");
 
         provider.add("message.gtceu.new_veins.amount", "Prospected %d new veins!");
         provider.add("message.gtceu.new_veins.name", "Prospected %s!");

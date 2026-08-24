@@ -9,7 +9,6 @@ import com.gregtechceu.gtceu.common.data.GTMaterials;
 import com.gregtechceu.gtceu.config.ConfigHolder;
 import com.gregtechceu.gtceu.integration.map.GenericMapRenderer;
 import com.gregtechceu.gtceu.integration.map.layer.MapRenderLayer;
-import com.gregtechceu.gtceu.integration.recipeviewer.widgets.OreVeinRecipeWidget;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -37,7 +36,8 @@ public class OreRenderLayer extends MapRenderLayer {
         if (vein == null || vein.definition() == null || vein.definition().unwrapKey().isEmpty()) {
             return Component.translatable("gtceu.minimap.ore_vein.depleted");
         }
-        return Component.translatable(OreVeinRecipeWidget.getOreName(vein.definition().value()));
+        var id = vein.definition().unwrapKey().get().location();
+        return Component.translatable(id.toLanguageKey("ore_vein"));
     }
 
     public static @NotNull Material getMaterial(@NotNull GeneratedVeinMetadata vein) {
@@ -58,6 +58,13 @@ public class OreRenderLayer extends MapRenderLayer {
         return firstMaterial;
     }
 
+    /**
+     * JourneyMap's hover tooltip background is sized incorrectly for titles beyond a few lines (the box ends
+     * up anchored to the bottom-most lines, leaving the top ones uncovered), so the material list is capped
+     * and summarized past this many entries.
+     */
+    private static final int MAX_TOOLTIP_MATERIAL_LINES = 2;
+
     public static List<Component> getTooltip(Component name, GeneratedVeinMetadata vein) {
         final List<Component> tooltip = new ArrayList<>();
         MutableComponent title = name.copy();
@@ -66,7 +73,12 @@ public class OreRenderLayer extends MapRenderLayer {
         }
         tooltip.add(title);
 
-        for (var filler : vein.definition().value().veinGenerator().getAllEntries()) {
+        var entries = vein.definition().value().veinGenerator().getAllEntries();
+        boolean truncated = entries.size() > MAX_TOOLTIP_MATERIAL_LINES;
+        // when truncating, show one fewer entry to leave room for the "N more" summary line below,
+        // so the tooltip never grows past MAX_TOOLTIP_MATERIAL_LINES material-related lines
+        int shown = truncated ? MAX_TOOLTIP_MATERIAL_LINES - 1 : entries.size();
+        for (var filler : entries.subList(0, shown)) {
             filler.vein().ifLeft(state -> {
                 tooltip.add(Component.literal(ConfigHolder.INSTANCE.compat.minimap.oreNamePrefix)
                         .append(state.getBlock().getName()));
@@ -74,6 +86,10 @@ public class OreRenderLayer extends MapRenderLayer {
                 tooltip.add(Component.literal(ConfigHolder.INSTANCE.compat.minimap.oreNamePrefix)
                         .append(TagPrefix.ore.getLocalizedName(material)));
             });
+        }
+        int remaining = entries.size() - shown;
+        if (remaining > 0) {
+            tooltip.add(Component.translatable("gtceu.minimap.ore_vein.more", remaining));
         }
         return tooltip;
     }

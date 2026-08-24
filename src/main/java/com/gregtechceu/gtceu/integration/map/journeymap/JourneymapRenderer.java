@@ -151,22 +151,32 @@ public class JourneymapRenderer extends GenericMapRenderer {
                                     }
                                     return String.join("\n", s1, s2);
                                 }))
-                .setOverlayListener(new MarkerListener(() -> {
-                    Material firstMaterial = oreVein.definition().value().veinGenerator().getAllMaterials().get(0);
-                    int color = firstMaterial.getMaterialARGB();
-
-                    WaypointManager.toggleWaypoint(OreRenderLayer.getId(oreVein), name.getString(), color,
-                            null, center);
-                }, () -> {
-                    oreVein.depleted(!oreVein.depleted());
-                }, () -> {
-                    Material firstMaterial = oreVein.definition().value().veinGenerator().getAllMaterials().get(0);
-                    int color = firstMaterial.getMaterialARGB();
-                    WaypointManager.toggleWaypoint(OreRenderLayer.getId(oreVein), id, color,
-                            null, center);
-                }));
+                .setOverlayListener(new MarkerListener(
+                        () -> toggleOreVeinWaypoint(oreVein, name, overlay, center),
+                        () -> oreVein.depleted(!oreVein.depleted()),
+                        () -> toggleOreVeinWaypoint(oreVein, name, overlay, center)));
 
         return overlay;
+    }
+
+    /**
+     * Toggles the waypoint for an ore vein marker, and hides/shows this marker's own overlay to match —
+     * otherwise the addon marker and the JourneyMap waypoint pin end up stacked at the same spot, each with
+     * their own competing hover tooltip, which breaks the tooltip's background/text layout.
+     */
+    private void toggleOreVeinWaypoint(GeneratedVeinMetadata oreVein, Component name, MarkerOverlay overlay,
+                                       BlockPos center) {
+        Material firstMaterial = oreVein.definition().value().veinGenerator().getAllMaterials().get(0);
+        int color = firstMaterial.getMaterialARGB();
+        boolean isNowWaypoint = WaypointManager.toggleWaypoint(OreRenderLayer.getId(oreVein), name.getString(),
+                color, null, center);
+
+        IClientAPI api = GTJourneyMapPlugin.getJmApi();
+        if (isNowWaypoint) {
+            api.remove(overlay);
+        } else if (this.doShowLayer("ore_veins")) {
+            api.show(overlay);
+        }
     }
 
     private static NativeImage createOreImage(GeneratedVeinMetadata vein) {
@@ -180,7 +190,7 @@ public class JourneymapRenderer extends GenericMapRenderer {
             return MATERIAL_ICONS.get(material);
         }
 
-        int materialRGBA = GradientUtil.argbToRgba(material.getMaterialARGB());
+        int materialAbgr = GradientUtil.argbToAbgr(material.getMaterialARGB());
 
         ResourceLocation layer1 = MaterialIconType.rawOre.getItemTexturePath(material.getMaterialIconSet(), true);
         TextureAtlasSprite baseTexture = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
@@ -198,11 +208,11 @@ public class JourneymapRenderer extends GenericMapRenderer {
             for (int y = 0; y < result.getHeight(); ++y) {
                 int color = baseTexture.getPixelRGBA(0, x, y);
                 result.setPixelRGBA(x, y, GradientUtil
-                        .multiplyBlendRGBA(color, materialRGBA));
+                        .multiplyBlendAbgr(color, materialAbgr));
             }
         }
         if (material.getMaterialSecondaryARGB() != -1) {
-            int materialSecondaryRGBA = GradientUtil.argbToRgba(material.getMaterialSecondaryARGB());
+            int materialSecondaryAbgr = GradientUtil.argbToAbgr(material.getMaterialSecondaryARGB());
             ResourceLocation layer2 = MaterialIconType.rawOre
                     .getItemTexturePath(material.getMaterialIconSet(), "secondary", true);
             if (layer2 == null) {
@@ -215,7 +225,7 @@ public class JourneymapRenderer extends GenericMapRenderer {
                 for (int y = 0; y < result.getHeight(); ++y) {
                     int color = image2.getPixelRGBA(0, x, y);
                     result.blendPixel(x, y, GradientUtil
-                            .multiplyBlendRGBA(color, materialSecondaryRGBA));
+                            .multiplyBlendAbgr(color, materialSecondaryAbgr));
                 }
             }
         }
@@ -268,15 +278,29 @@ public class JourneymapRenderer extends GenericMapRenderer {
                             }
                             return String.join("\n", s1, s2);
                         }))
-                .setOverlayListener(new MarkerListener(() -> {
-                    WaypointManager.toggleWaypoint(FluidRenderLayer.getId(vein, pos), id, color, null, center);
-                }, () -> {
-                    vein.left(0);
-                }, () -> {
-                    WaypointManager.toggleWaypoint("ore_veins", id, color, null, center);
-                }));
+                .setOverlayListener(new MarkerListener(
+                        () -> toggleFluidVeinWaypoint(vein, pos, id, color, overlay, center),
+                        () -> vein.left(0),
+                        () -> toggleFluidVeinWaypoint(vein, pos, id, color, overlay, center)));
 
         return overlay;
+    }
+
+    /**
+     * Same rationale as {@link #toggleOreVeinWaypoint}: keep the addon marker and the JourneyMap waypoint pin
+     * from both being hoverable at the same spot at once.
+     */
+    private void toggleFluidVeinWaypoint(ProspectorMode.FluidInfo vein, ChunkPos pos, String id, int color,
+                                         PolygonOverlay overlay, BlockPos center) {
+        boolean isNowWaypoint = WaypointManager.toggleWaypoint(FluidRenderLayer.getId(vein, pos), id, color, null,
+                center);
+
+        IClientAPI api = GTJourneyMapPlugin.getJmApi();
+        if (isNowWaypoint) {
+            api.remove(overlay);
+        } else if (this.doShowLayer("bedrock_fluids")) {
+            api.show(overlay);
+        }
     }
 
     /**

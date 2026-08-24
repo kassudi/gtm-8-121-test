@@ -14,10 +14,6 @@ public class GradientUtil {
         return (argb & 0xFF00FF00) | (b << 16) | r;
     }
 
-    public static int argbToRgba(int argb) {
-        return argb << 8 | (argb >>> 24);
-    }
-
     public static float[] getRGB(int color) {
         float r = ((color >> 16) & 0xFF) / 255f;
         float g = ((color >> 8) & 0xFF) / 255f;
@@ -26,24 +22,28 @@ public class GradientUtil {
         return new float[] { r, g, b };
     }
 
-    @SuppressWarnings("PointlessBitwiseExpression")
-    public static int multiplyBlendRGBA(int c1, int c2) {
-        int r1 = ((c1 & 0xff000000) >> 24);
-        int g1 = ((c1 & 0x00ff0000) >> 16);
-        int b1 = ((c1 & 0x0000ff00) >> 8);
-        int a1 = ((c1 & 0x000000ff) >> 0);
+    /**
+     * Multiplies two colors packed in NativeImage's native ABGR order (as produced by
+     * {@link #argbToAbgr(int)} or returned by {@code NativeImage}/{@code TextureAtlasSprite} pixel getters).
+     * Uses unsigned shifts so channel values of 0xFF don't sign-extend to -1.
+     */
+    public static int multiplyBlendAbgr(int c1, int c2) {
+        int a1 = (c1 >>> 24) & 0xff;
+        int b1 = (c1 >>> 16) & 0xff;
+        int g1 = (c1 >>> 8) & 0xff;
+        int r1 = c1 & 0xff;
 
-        int r2 = ((c2 & 0xff000000) >> 24);
-        int g2 = ((c2 & 0x00ff0000) >> 16);
-        int b2 = ((c2 & 0x0000ff00) >> 8);
-        int a2 = ((c2 & 0x000000ff) >> 0);
+        int a2 = (c2 >>> 24) & 0xff;
+        int b2 = (c2 >>> 16) & 0xff;
+        int g2 = (c2 >>> 8) & 0xff;
+        int r2 = c2 & 0xff;
 
-        int r = (r1 * r2) / 255;
-        int g = (g1 * g2) / 255;
-        int b = (b1 * b2) / 255;
         int a = (a1 * a2) / 255;
+        int b = (b1 * b2) / 255;
+        int g = (g1 * g2) / 255;
+        int r = (r1 * r2) / 255;
 
-        return r << 24 | g << 16 | b << 8 | a;
+        return a << 24 | b << 16 | g << 8 | r;
     }
 
     public static int blend(int c1, int c2, float ratio) {

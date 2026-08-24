@@ -175,7 +175,12 @@ public class JourneymapRenderer extends GenericMapRenderer {
         if (isNowWaypoint) {
             api.remove(overlay);
         } else if (this.doShowLayer("ore_veins")) {
-            api.show(overlay);
+            try {
+                api.show(overlay);
+            } catch (Exception e) {
+                // It never actually throws anything...
+                GTCEu.LOGGER.error("Failed to re-enable marker with name {}", name, e);
+            }
         }
     }
 
@@ -299,7 +304,12 @@ public class JourneymapRenderer extends GenericMapRenderer {
         if (isNowWaypoint) {
             api.remove(overlay);
         } else if (this.doShowLayer("bedrock_fluids")) {
-            api.show(overlay);
+            try {
+                api.show(overlay);
+            } catch (Exception e) {
+                // It never actually throws anything...
+                GTCEu.LOGGER.error("Failed to re-enable marker with id {}", id, e);
+            }
         }
     }
 

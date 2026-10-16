@@ -11,7 +11,7 @@ ServerEvents.recipes(event => {
   // e.g. [/_plate$/, /_rod$/]. Leave empty to cover every tool-based recipe.
   const OUTPUT_FILTERS = [];
 
-  const isTool = j => JSON.stringify(j).indexOf('tools/crafting_') !== -1;
+  const isTool = j => String(j.toString()).indexOf('tools/crafting_') !== -1;
 
   // Turn a recipe-JSON ingredient into something event.shaped understands.
   const toIngredient = j => {

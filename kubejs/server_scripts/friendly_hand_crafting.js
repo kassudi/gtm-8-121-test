@@ -7,8 +7,7 @@
 //
 // Put this file in <instance>/kubejs/server_scripts/ and run /reload.
 
-const JsonArray = Java.loadClass('com.google.gson.JsonArray');
-const JsonPrimitive = Java.loadClass('com.google.gson.JsonPrimitive');
+const JsonParser = Java.loadClass('com.google.gson.JsonParser');
 
 ServerEvents.recipes(event => {
   // Which recipe outputs get the friendlier ratio. Add more patterns as you like.
@@ -57,9 +56,7 @@ ServerEvents.recipes(event => {
       const newRow = tools.concat(materials).join('');
       if (newRow.length > 3) return;
 
-      const pattern = new JsonArray();
-      pattern.add(new JsonPrimitive(String(newRow)));
-      json.add('pattern', pattern);
+      json.add('pattern', JsonParser.parseString(JSON.stringify([newRow])));
       recipe.save();
       changed++;
     });

@@ -7,9 +7,9 @@
 // Put this file in <instance>/kubejs/server_scripts/ and run /reload.
 
 ServerEvents.recipes(event => {
-  // Optional: restrict to outputs whose item id matches one of these patterns,
-  // e.g. [/_plate$/, /_rod$/]. Leave empty to cover every tool-based recipe.
-  const OUTPUT_FILTERS = [];
+  // Only recipes whose output has one of these item tags are changed.
+  // Add e.g. 'forge:rods' or 'forge:gears' later; leave empty to cover every tool-based recipe.
+  const OUTPUT_TAGS = ['forge:plates'];
 
   const isTool = j => String(j.toString()).indexOf('tools/crafting_') !== -1;
 
@@ -30,7 +30,7 @@ ServerEvents.recipes(event => {
     const result = json.get('result');
     if (!result.has('item')) return;
     const outId = String(result.get('item').getAsString());
-    if (OUTPUT_FILTERS.length > 0 && !OUTPUT_FILTERS.some(re => re.test(outId))) return;
+    if (OUTPUT_TAGS.length > 0 && !OUTPUT_TAGS.some(tag => Item.of(outId).hasTag(tag))) return;
     seen++;
 
     // Count how often each symbol appears in the grid.
@@ -54,8 +54,10 @@ ServerEvents.recipes(event => {
     // Tool-less ones such as ingot -> block compression are left alone.
     if (tools.length === 0 || materials.length !== 1 || counts[materials[0]] <= 1) return;
 
-    const row = tools.concat(materials).join('');
-    if (row.length > 3) return;
+    // One symbol per row, stacked vertically: tools on top, material below
+    // (e.g. hammer above ingot), matching GTM's original layout.
+    const rows = tools.concat(materials);
+    if (rows.length > 3) return;
 
     // Rhino mishandles block-scoped const in loops, so use plain function scopes.
     const keyMap = {};
@@ -71,7 +73,7 @@ ServerEvents.recipes(event => {
       id: String(recipe.getId()),
       out: outId,
       count: result.has('count') ? result.get('count').getAsInt() : 1,
-      row: row,
+      rows: rows,
       keyMap: keyMap,
     });
   });
@@ -79,8 +81,8 @@ ServerEvents.recipes(event => {
   // Apply after iterating so we don't modify recipes mid-loop.
   jobs.forEach(job => {
     event.remove({ id: job.id });
-    event.shaped(Item.of(job.out, job.count), [job.row], job.keyMap).id(job.id);
-    console.info('[friendly_hand_crafting] ' + job.id + ' -> ' + job.row);
+    event.shaped(Item.of(job.out, job.count), job.rows, job.keyMap).id(job.id);
+    console.info('[friendly_hand_crafting] ' + job.id + ' -> ' + job.rows.join('/'));
   });
 
   console.info('[friendly_hand_crafting] matched ' + seen + ', rewrote ' + jobs.length + ' recipes');

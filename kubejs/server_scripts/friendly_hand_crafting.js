@@ -11,6 +11,17 @@ ServerEvents.recipes(event => {
   // Add e.g. 'forge:rods' or 'forge:gears' later; leave empty to cover every tool-based recipe.
   const OUTPUT_TAGS = ['forge:plates'];
 
+  // The recipe must also use a tool carrying one of these item tags.
+  // Leave empty to accept any tool.
+  const TOOL_TAGS = ['forge:tools/hammer'];
+
+  // True if any item the ingredient can match has one of the TOOL_TAGS.
+  const hasWantedTool = ingredient => {
+    if (TOOL_TAGS.length === 0) return true;
+    return Ingredient.of(ingredient).getStacks().toArray()
+      .some(stack => TOOL_TAGS.some(tag => stack.hasTag(tag)));
+  };
+
   const isTool = j => String(j.toString()).indexOf('tools/crafting_') !== -1;
 
   // Turn a recipe-JSON ingredient into something event.shaped understands.
@@ -68,6 +79,7 @@ ServerEvents.recipes(event => {
       keyMap[sym] = converted;
     });
     if (!supported) return;
+    if (!tools.some(sym => hasWantedTool(keyMap[sym]))) return;
 
     jobs.push({
       id: String(recipe.getId()),

@@ -7,13 +7,9 @@
 // Put this file in <instance>/kubejs/server_scripts/ and run /reload.
 
 ServerEvents.recipes(event => {
-  // Which recipe outputs get the friendlier ratio. Add more patterns as you like.
-  // Tested against the output item id, e.g. "gtceu:iron_plate".
-  const OUTPUT_FILTERS = [
-    /_plate$/,        // plates
-    // /_rod$/,       // uncomment to also adjust other hand-craft outputs
-    // /_ring$/,
-  ];
+  // Optional: restrict to outputs whose item id matches one of these patterns,
+  // e.g. [/_plate$/, /_rod$/]. Leave empty to cover every tool-based recipe.
+  const OUTPUT_FILTERS = [];
 
   const isTool = j => JSON.stringify(j).indexOf('tools/crafting_') !== -1;
 
@@ -34,7 +30,7 @@ ServerEvents.recipes(event => {
     const result = json.get('result');
     if (!result.has('item')) return;
     const outId = String(result.get('item').getAsString());
-    if (!OUTPUT_FILTERS.some(re => re.test(outId))) return;
+    if (OUTPUT_FILTERS.length > 0 && !OUTPUT_FILTERS.some(re => re.test(outId))) return;
     seen++;
 
     // Count how often each symbol appears in the grid.
@@ -54,8 +50,9 @@ ServerEvents.recipes(event => {
       (isTool(key.get(sym)) ? tools : materials).push(sym);
     });
 
-    // Only handle: one repeated material (+ any number of tools).
-    if (materials.length !== 1 || counts[materials[0]] <= 1) return;
+    // Only tool-based recipes (hammer, saw, file, ...) with one repeated material.
+    // Tool-less ones such as ingot -> block compression are left alone.
+    if (tools.length === 0 || materials.length !== 1 || counts[materials[0]] <= 1) return;
 
     const row = tools.concat(materials).join('');
     if (row.length > 3) return;
@@ -80,6 +77,7 @@ ServerEvents.recipes(event => {
   jobs.forEach(job => {
     event.remove({ id: job.id });
     event.shaped(Item.of(job.out, job.count), [job.row], job.keyMap).id(job.id);
+    console.info('[friendly_hand_crafting] ' + job.id + ' -> ' + job.row);
   });
 
   console.info('[friendly_hand_crafting] matched ' + seen + ', rewrote ' + jobs.length + ' recipes');

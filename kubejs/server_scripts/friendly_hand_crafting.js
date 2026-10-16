@@ -57,12 +57,15 @@ ServerEvents.recipes(event => {
     const row = tools.concat(materials).join('');
     if (row.length > 3) return;
 
+    // Rhino mishandles block-scoped const in loops, so use plain function scopes.
     const keyMap = {};
-    for (const sym of tools.concat(materials)) {
-      const ing = toIngredient(key.get(sym));
-      if (ing === null) return; // unknown ingredient format, leave recipe alone
-      keyMap[sym] = ing;
-    }
+    let supported = true;
+    tools.concat(materials).forEach(function (sym) {
+      const converted = toIngredient(key.get(sym));
+      if (converted === null) supported = false; // unknown format, leave recipe alone
+      keyMap[sym] = converted;
+    });
+    if (!supported) return;
 
     jobs.push({
       id: String(recipe.getId()),
